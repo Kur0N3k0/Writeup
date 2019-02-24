@@ -768,7 +768,7 @@
 
 - glibc heap exploit(tcache)
 
-- 이 문제는 tcache가 적용된 libc-2.27.so가 사용되었다. 기존 heap exploit기법들에 추가적으로 공격가능한 게 추가되었는데, 이는 fast bin 크기 정도의 tcache bin이 사용되는 걸 악용해야한다. 주어진 바이너리를 분석해보자.
+- 이 문제는 tcache가 적용된 libc-2.27.so가 사용되었다. 기존 heap exploit기법들에 추가적으로 공격가능한 게 추가되었는데, 이는 tcache bin이 사용되는 걸 악용해야한다. 주어진 바이너리를 분석해보자.
 
   ```c
   __int64 __fastcall main(__int64 a1, char **a2, char **a3)
@@ -832,7 +832,7 @@
 
 - 그리고 free가 되는 곳은 withdraw함수인데, 현재 가지고 있는 balance를 전부 소진(0이 돼야함)해야한다. 그리고 show함수에서는 wallet_count만큼 wallet을 출력해주므로 free(balance)가 된 wallet도 출력을 해주게 된다.
 
-- 하지만 이는 tcache bin에 들어갈 수 있는 크기(max fast bin size: 0x80)이면 main_arena와의 unlink를 진행하지 않는다. 그러므로 어느정도 큰값을 할당시켜 free시켜주면 main_arena의 주소가 leak된다.
+- 하지만 이는 tcache bin에 들어갈 수 있는 크기(max tcache bin size: 0x408)이면 main_arena와의 unlink를 진행하지 않는다. 그러므로 어느정도 큰값을 할당시켜 free시켜주면 main_arena의 주소가 leak된다.
 
 - 그리고 tcache bin의 특성상 실제로 free하지 않고 포인터를 가지고 있는데, heap chunk fd, bk에 해당하는 영역에 next chunk 주소가 들어가게 된다. 이는 다음 malloc(fastbin_size) 시, 참조하여 fd부분에 존재하는 next chunk를 그 다음 할당할 주소로 지정해준다. 이를 악용한 공격이 tcache_poisoning이다.
 
